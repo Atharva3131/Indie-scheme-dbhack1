@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indic Government Scheme Copilot</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            margin: 0; 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .chat-messages {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState } = React;
+        
+        // Translation object
+        const translations = {
+            english: {
+                title: '🇮🇳 Scheme Copilot',
+                subtitle: 'Discover Government Benefits Made Easy',
+                eligibilityTitle: '📋 Check Your Eligibility',
+                eligibilitySubtitle: 'Fill in your details to find matching schemes',
+                ageLabel: 'Age',
+                agePlaceholder: 'Enter your age',
+                incomeLabel: 'Annual Income (₹)',
+                incomePlaceholder: 'e.g., 300000',
+                categoryLabel: 'Category',
+                occupationLabel: 'Occupation',
+                occupationPlaceholder: 'e.g., Student, Farmer',
+                stateLabel: 'State',
+                findSchemesButton: 'Find Matching Schemes',
+                availableSchemesTitle: '✨ Available Schemes for You',
+                chatTitle: '💬 Ask Me About Schemes',
+                chatPlaceholder: 'Type "I\'m interested in..." or ask questions...',
+                sendButton: 'Send',
+                resultsTitle: '📖 Scheme Details',
+                noSchemes: 'Submit the eligibility form to see available schemes',
+                noChatResults: 'Ask about a scheme to see details here',
+                eligible: '✓ You are eligible',
+                documents: '📄 Required Documents:',
+                benefits: '💰 Benefits',
+                categories: {
+                    general: 'General',
+                    obc: 'OBC',
+                    sc: 'SC',
+                    st: 'ST'
+                }
+            },
+            hindi: {
+                title: '🇮🇳 योजना सहायक',
+                subtitle: 'सरकारी लाभों को आसान बनाया गया',
+                eligibilityTitle: '📋 अपनी पात्रता जांचें',
+                eligibilitySubtitle: 'मिलान योजनाएं खोजने के लिए अपना विवरण भरें',
+                ageLabel: 'आयु',
+                agePlaceholder: 'अपनी आयु दर्ज करें',
+                incomeLabel: 'वार्षिक आय (₹)',
+                incomePlaceholder: 'उदा., 300000',
+                categoryLabel: 'श्रेणी',
+                occupationLabel: 'व्यवसाय',
+                occupationPlaceholder: 'उदा., छात्र, किसान',
+                stateLabel: 'राज्य',
+                findSchemesButton: 'मिलान योजनाएं खोजें',
+                availableSchemesTitle: '✨ आपके लिए उपलब्ध योजनाएं',
+                chatTitle: '💬 योजनाओं के बारे में पूछें',
+                chatPlaceholder: '"मुझे इसमें रुचि है..." लिखें या सवाल पूछें...',
+                sendButton: 'भेजें',
+                resultsTitle: '📖 योजना विवरण',
+                noSchemes: 'उपलब्ध योजनाएं देखने के लिए पात्रता फॉर्म जमा करें',
+                noChatResults: 'विवरण देखने के लिए किसी योजना के बारे में पूछें',
+                eligible: '✓ आप पात्र हैं',
+                documents: '📄 आवश्यक दस्तावेज:',
+                benefits: '💰 लाभ',
+                categories: {
+                    general: 'सामान्य',
+                    obc: 'ओबीसी',
+                    sc: 'अनुसूचित जाति',
+                    st: 'अनुसूचित जनजाति'
+                }
+            }
+        };
+        
+        // Mock schemes data
+        const mockSchemesData = {
+            english: {
+                names: [
+                    'PM Scholarship Scheme',
+                    'National Means-cum-Merit Scholarship',
+                    'Post Matric Scholarship',
+                    'Merit-cum-Means Based Scholarship'
+                ],
+                details: {
+                    'PM Scholarship Scheme': {
+                        name: 'PM Scholarship Scheme',
+                        description: 'Financial assistance for students pursuing higher education. This scheme provides monetary support to help students from economically weaker sections continue their studies without financial burden.',
+                        eligibility: 'Age: 18-25 years, Income: Below ₹5,00,000, Category: All, Occupation: Student',
+                        documents: ['Aadhar Card', 'Income Certificate', 'Admission Letter', 'Bank Account Details'],
+                        benefits: '₹50,000 per year for tuition and related expenses'
+                    },
+                    'National Means-cum-Merit Scholarship': {
+                        name: 'National Means-cum-Merit Scholarship',
+                        description: 'Support for economically weaker students in secondary education. Aimed at preventing dropout of meritorious students from economically weaker sections.',
+                        eligibility: 'Age: 14-18 years, Income: Below ₹1,50,000, Category: All, Occupation: Student',
+                        documents: ['Aadhar Card', 'Income Certificate', 'School ID', 'Previous Year Mark Sheet'],
+                        benefits: '₹12,000 per year for educational expenses'
+                    },
+                    'Post Matric Scholarship': {
+                        name: 'Post Matric Scholarship',
+                        description: 'Scholarship for SC/ST students pursuing post-matriculation or post-secondary education. Covers maintenance allowance and other expenses.',
+                        eligibility: 'Age: 16-30 years, Income: Below ₹2,50,000, Category: SC/ST, Occupation: Student',
+                        documents: ['Caste Certificate', 'Aadhar Card', 'Income Certificate', 'Fee Receipt'],
+                        benefits: '₹20,000 per year plus hostel fees'
+                    },
+                    'Merit-cum-Means Based Scholarship': {
+                        name: 'Merit-cum-Means Based Scholarship',
+                        description: 'For professional and technical courses at graduate and postgraduate level for students from minority communities.',
+                        eligibility: 'Age: 18-35 years, Income: Below ₹6,00,000, Category: Minority, Occupation: Student',
+                        documents: ['Minority Certificate', 'Income Certificate', 'Admission Proof', 'Aadhar Card'],
+                        benefits: '₹30,000 per year for course fees'
+                    }
+                }
+            },
+            hindi: {
+                names: [
+                    'प्रधानमंत्री छात्रवृत्ति योजना',
+                    'राष्ट्रीय साधन-सह-योग्यता छात्रवृत्ति',
+                    'पोस्ट मैट्रिक छात्रवृत्ति',
+                    'मेधा-सह-साधन आधारित छात्रवृत्ति'
+                ],
+                details: {
+                    'प्रधानमंत्री छात्रवृत्ति योजना': {
+                        name: 'प्रधानमंत्री छात्रवृत्ति योजना',
+                        description: 'उच्च शिक्षा प्राप्त करने वाले छात्रों के लिए वित्तीय सहायता। यह योजना आर्थिक रूप से कमजोर वर्ग के छात्रों को बिना वित्तीय बोझ के अपनी पढ़ाई जारी रखने में मदद करती है।',
+                        eligibility: 'आयु: 18-25 वर्ष, आय: ₹5,00,000 से कम, श्रेणी: सभी, व्यवसाय: छात्र',
+                        documents: ['आधार कार्ड', 'आय प्रमाण पत्र', 'प्रवेश पत्र', 'बैंक खाता विवरण'],
+                        benefits: 'ट्यूशन और संबंधित खर्चों के लिए ₹50,000 प्रति वर्ष'
+                    },
+                    'राष्ट्रीय साधन-सह-योग्यता छात्रवृत्ति': {
+                        name: 'राष्ट्रीय साधन-सह-योग्यता छात्रवृत्ति',
+                        description: 'माध्यमिक शिक्षा में आर्थिक रूप से कमजोर छात्रों के लिए सहायता। आर्थिक रूप से कमजोर वर्ग के मेधावी छात्रों को स्कूल छोड़ने से रोकने के लिए।',
+                        eligibility: 'आयु: 14-18 वर्ष, आय: ₹1,50,000 से कम, श्रेणी: सभी, व्यवसाय: छात्र',
+                        documents: ['आधार कार्ड', 'आय प्रमाण पत्र', 'स्कूल आईडी', 'पिछले वर्ष की मार्कशीट'],
+                        benefits: 'शैक्षिक खर्चों के लिए ₹12,000 प्रति वर्ष'
+                    },
+                    'पोस्ट मैट्रिक छात्रवृत्ति': {
+                        name: 'पोस्ट मैट्रिक छात्रवृत्ति',
+                        description: 'मैट्रिक के बाद या माध्यमिक के बाद की शिक्षा प्राप्त करने वाले एससी/एसटी छात्रों के लिए छात्रवृत्ति। रखरखाव भत्ता और अन्य खर्चों को कवर करती है।',
+                        eligibility: 'आयु: 16-30 वर्ष, आय: ₹2,50,000 से कम, श्रेणी: एससी/एसटी, व्यवसाय: छात्र',
+                        documents: ['जाति प्रमाण पत्र', 'आधार कार्ड', 'आय प्रमाण पत्र', 'शुल्क रसीद'],
+                        benefits: '₹20,000 प्रति वर्ष और छात्रावास शुल्क'
+                    },
+                    'मेधा-सह-साधन आधारित छात्रवृत्ति': {
+                        name: 'मेधा-सह-साधन आधारित छात्रवृत्ति',
+                        description: 'अल्पसंख्यक समुदायों के छात्रों के लिए स्नातक और स्नातकोत्तर स्तर पर व्यावसायिक और तकनीकी पाठ्यक्रमों के लिए।',
+                        eligibility: 'आयु: 18-35 वर्ष, आय: ₹6,00,000 से कम, श्रेणी: अल्पसंख्यक, व्यवसाय: छात्र',
+                        documents: ['अल्पसंख्यक प्रमाण पत्र', 'आय प्रमाण पत्र', 'प्रवेश प्रमाण', 'आधार कार्ड'],
+                        benefits: 'पाठ्यक्रम शुल्क के लिए ₹30,000 प्रति वर्ष'
+                    }
+                }
+            }
+        };
+        
+        // Navbar Component
+        const Navbar = ({ language, onLanguageToggle }) => {
+            const t = translations[language];
+            return (
+                <nav className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 shadow-2xl">
+                    <div className="max-w-7xl mx-auto px-6 py-5">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h1 className="text-3xl font-bold text-white tracking-tight">{t.title}</h1>
+                                <p className="text-indigo-100 text-sm mt-1">{t.subtitle}</p>
+                            </div>
+                            <button
+                                onClick={onLanguageToggle}
+                                className="bg-white text-purple-600 px-6 py-3 rounded-xl font-bold hover:bg-purple-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                            >
+                                {language === 'english' ? '🌐 EN | हिंदी' : '🌐 हिंदी | EN'}
+                            </button>
+                        </div>
+                    </div>
+                </nav>
+            );
+        };
+        
+        // Eligibility Form Component
+        const EligibilityForm = ({ onSubmit, language, isSubmitted }) => {
+            const [formData, setFormData] = useState({
+                age: '',
+                income: '',
+                category: 'General',
+                occupation: '',
+                state: 'Karnataka'
+            });
+            
+            const t = translations[language];
+            
+            const handleChange = (field, value) => {
+                setFormData({ ...formData, [field]: value });
+            };
+            
+            const handleSubmit = () => {
+                onSubmit(formData);
+            };
+            
+            if (isSubmitted) return null;
+            
+            return (
+                <div className="max-w-2xl mx-auto">
+                    <div className="glass-effect rounded-3xl shadow-2xl p-8 border border-white/20">
+                        <div className="text-center mb-8">
+                            <div className="inline-block bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-3xl mb-4">
+                                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-3xl font-bold text-gray-800 mb-2">{t.eligibilityTitle}</h2>
+                            <p className="text-gray-600">{t.eligibilitySubtitle}</p>
+                        </div>
+                        
+                        <div className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t.ageLabel}</label>
+                                <input
+                                    type="number"
+                                    value={formData.age}
+                                    onChange={(e) => handleChange('age', e.target.value)}
+                                    className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all"
+                                    placeholder={t.agePlaceholder}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t.incomeLabel}</label>
+                                <input
+                                    type="number"
+                                    value={formData.income}
+                                    onChange={(e) => handleChange('income', e.target.value)}
+                                    className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all"
+                                    placeholder={t.incomePlaceholder}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t.categoryLabel}</label>
+                                <select
+                                    value={formData.category}
+                                    onChange={(e) => handleChange('category', e.target.value)}
+                                    className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all bg-white"
+                                >
+                                    <option value="General">{t.categories.general}</option>
+                                    <option value="OBC">{t.categories.obc}</option>
+                                    <option value="SC">{t.categories.sc}</option>
+                                    <option value="ST">{t.categories.st}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t.occupationLabel}</label>
+                                <input
+                                    type="text"
+                                    value={formData.occupation}
+                                    onChange={(e) => handleChange('occupation', e.target.value)}
+                                    className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all"
+                                    placeholder={t.occupationPlaceholder}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t.stateLabel}</label>
+                                <select
+                                    value={formData.state}
+                                    onChange={(e) => handleChange('state', e.target.value)}
+                                    className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all bg-white"
+                                >
+                                    <option>Karnataka</option>
+                                </select>
+                            </div>
+                            <button
+                                onClick={handleSubmit}
+                                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-2xl font-bold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-lg"
+                            >
+                                {t.findSchemesButton}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Scheme Names List Component
+        const SchemeNamesList = ({ schemes, language }) => {
+            const t = translations[language];
+            if (schemes.length === 0) return null;
+            
+            return (
+                <div className="glass-effect rounded-3xl shadow-2xl p-6 border border-white/20">
+                    <h3 className="text-xl font-bold text-gray-800 mb-4">{t.availableSchemesTitle}</h3>
+                    <div className="flex flex-wrap gap-3">
+                        {schemes.map((scheme, idx) => (
+                            <div key={idx} className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-5 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
+                                {scheme}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+        
+        // Chat Interface Component
+        const ChatInterface = ({ onSendMessage, messages, language, isVisible }) => {
+            const [message, setMessage] = useState('');
+            const t = translations[language];
+            
+            if (!isVisible) return null;
+            
+            const handleSend = () => {
+                if (message.trim()) {
+                    onSendMessage(message);
+                    setMessage('');
+                }
+            };
+            
+            return (
+                <div className="glass-effect rounded-3xl shadow-2xl p-6 border border-white/20">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="bg-gradient-to-br from-green-500 to-teal-600 p-3 rounded-2xl">
+                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-800">{t.chatTitle}</h3>
+                    </div>
+                    
+                    <div className="chat-messages mb-4 space-y-3">
+                        {messages.map((msg, idx) => (
+                            <div key={idx} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[80%] px-4 py-3 rounded-2xl ${msg.type === 'user' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
+                                    <p className="text-sm">{msg.text}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div className="flex gap-3">
+                        <input
+                            type="text"
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                            placeholder={t.chatPlaceholder}
+                            className="flex-1 px-5 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none focus:ring-4 focus:ring-green-100 transition-all"
+                        />
+                        <button
+                            onClick={handleSend}
+                            className="bg-gradient-to-r from-green-500 to-teal-600 text-white px-6 py-3 rounded-xl font-bold hover:from-green-600 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                        >
+                            {t.sendButton}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Scheme Details Component
+        const SchemeDetails = ({ scheme, language, isVisible }) => {
+            const t = translations[language];
+            
+            if (!isVisible) return null;
+            if (!scheme) {
+                return (
+                    <div className="glass-effect rounded-3xl shadow-2xl p-8 border border-white/20">
+                        <div className="text-center py-12 float-animation">
+                            <div className="inline-block bg-gradient-to-br from-gray-100 to-gray-200 p-8 rounded-3xl shadow-lg">
+                                <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                <p className="text-gray-500 font-medium">{t.noChatResults}</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            
+            return (
+                <div className="glass-effect rounded-3xl shadow-2xl p-8 border border-white/20">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="bg-gradient-to-br from-pink-500 to-rose-600 p-3 rounded-2xl">
+                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                                <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-800">{t.resultsTitle}</h3>
+                    </div>
+                    
+                    <div className="space-y-6">
+                        <div>
+                            <h4 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-3">{scheme.name}</h4>
+                            <p className="text-gray-700 leading-relaxed text-lg">{scheme.description}</p>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-5 rounded-2xl border-2 border-green-200">
+                            <div className="flex items-center gap-2 mb-3">
+                                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span className="font-bold text-green-800 text-lg">{t.eligible}</span>
+                            </div>
+                            <p className="text-gray-700 font-medium">{scheme.eligibility}</p>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-5 rounded-2xl border-2 border-amber-200">
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="text-2xl">💰</span>
+                                <span className="font-bold text-amber-800 text-lg">{t.benefits}</span>
+                            </div>
+                            <p className="text-gray-700 font-medium text-lg">{scheme.benefits}</p>
+                        </div>
+                        
+                        <div>
+                            <div className="flex items-center gap-2 mb-4">
+                                <span className="bg-blue-500 text-white p-2 rounded-lg">
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                                    </svg>
+                                </span>
+                                <span className="font-bold text-gray-700 text-lg">{t.documents}</span>
+                            </div>
+                            <ul className="space-y-3">
+                                {scheme.documents.map((doc, idx) => (
+                                    <li key={idx} className="flex items-center gap-3 text-gray-700 bg-white p-3 rounded-xl border border-gray-200">
+                                        <span className="w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex-shrink-0"></span>
+                                        <span className="font-medium">{doc}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Main App Component
+        const App = () => {
+            const [language, setLanguage] = useState('english');
+            const [isEligibilitySubmitted, setIsEligibilitySubmitted] = useState(false);
+            const [schemeNames, setSchemeNames] = useState([]);
+            const [chatMessages, setChatMessages] = useState([]);
+            const [selectedScheme, setSelectedScheme] = useState(null);
+            const [loading, setLoading] = useState(false);
+            
+            const handleEligibilitySubmit = async (formData) => {
+                setLoading(true);
+                try {
+                    const response = await fetch('/api/eligibility', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_profile: {
+                                age: parseInt(formData.age),
+                                income: parseInt(formData.income),
+                                category: formData.category,
+                                occupation: formData.occupation,
+                                state: formData.state
+                            },
+                            language: language
+                        })
+                    });
+                    const data = await response.json();
+                    
+                    const allSchemes = [...(data.eligible_schemes || []), ...(data.recommended_schemes || [])].map(s => s.scheme);
+                    const names = allSchemes.map(s => s.name);
+                    
+                    window.fetchedSchemes = allSchemes;
+                    setSchemeNames(names);
+                    setIsEligibilitySubmitted(true);
+                } catch (error) {
+                    console.error('Error fetching eligibility:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            const handleSendMessage = async (message) => {
+                // Add user message
+                const newMessages = [...chatMessages, { type: 'user', text: message }];
+                setChatMessages(newMessages);
+                
+                setLoading(true);
+                try {
+                    // Search for relevant schemes based on the message
+                    const searchResp = await fetch('/api/search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: message,
+                            language: language,
+                            top_k: 1
+                        })
+                    });
+                    const searchData = await searchResp.json();
+                    
+                    if (searchData.results && searchData.results.length > 0) {
+                        const topSchemeResult = searchData.results[0].scheme;
+                        
+                        const documentList = topSchemeResult.required_documents || [];
+                        const benefitsStr = Array.isArray(topSchemeResult.benefits) ? topSchemeResult.benefits.join(', ') : (topSchemeResult.benefits || '');
+                        
+                        const mappedScheme = {
+                            name: topSchemeResult.name,
+                            description: topSchemeResult.description,
+                            eligibility: topSchemeResult.eligibility_criteria || '',
+                            benefits: benefitsStr,
+                            documents: typeof documentList === 'string' ? [documentList] : documentList
+                        };
+                        setSelectedScheme(mappedScheme);
+                        
+                        // Format a conversational response using Sarvam AI
+                        const formatResp = await fetch('/api/format', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                schemes: [{
+                                    scheme: topSchemeResult,
+                                    match_score: searchData.results[0].match_score || 100.0,
+                                    eligibility_reason: "Matched via search",
+                                    is_eligible: true
+                                }],
+                                language: language
+                            })
+                        });
+                        const formatData = await formatResp.json();
+                        
+                        setChatMessages(prev => [...prev, { type: 'bot', text: formatData.formatted_response }]);
+                    } else {
+                        const fallbackMsg = language === 'english'
+                            ? "I couldn't find a scheme matching your request."
+                            : "मुझे आपके अनुरोध से मेल खाने वाली कोई योजना नहीं मिली।";
+                        setChatMessages(prev => [...prev, { type: 'bot', text: fallbackMsg }]);
+                    }
+                } catch (error) {
+                    console.error('Error in chat:', error);
+                    setChatMessages(prev => [...prev, { type: 'bot', text: "Sorry, an error occurred." }]);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            return (
+                <div className="min-h-screen" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
+                    <Navbar language={language} onLanguageToggle={() => setLanguage(language === 'english' ? 'hindi' : 'english')} />
+                    
+                    <div className="max-w-7xl mx-auto px-6 py-10">
+                        {!isEligibilitySubmitted ? (
+                            <EligibilityForm 
+                                onSubmit={handleEligibilitySubmit} 
+                                language={language} 
+                                isSubmitted={isEligibilitySubmitted}
+                            />
+                        ) : (
+                            <div className="space-y-6">
+                                <SchemeNamesList schemes={schemeNames} language={language} />
+                                
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <ChatInterface 
+                                        onSendMessage={handleSendMessage} 
+                                        messages={chatMessages}
+                                        language={language}
+                                        isVisible={isEligibilitySubmitted}
+                                    />
+                                    <SchemeDetails 
+                                        scheme={selectedScheme} 
+                                        language={language}
+                                        isVisible={isEligibilitySubmitted}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+        
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
